@@ -15,22 +15,27 @@ Font font;
 VertexArray line(LineStrip, 2);
 UIutils ui;
 vec2 mousepos;
+Text outTxt;
 vector<string> notes = {"A", "a", "B", "C", "c", "D", "d", "E", "F", "f", "G", "g"};
 vector<vector<int>> notesInt;
 vector<vector<string>> notesChar;
-vector<int> offsets = {7, 0, 5, 10, 1, 7};
+vector<int> offsets = {7, 0, 5, 10, 2, 7};
 vector<int> minor = {2, 1, 2, 2, 1, 2, 2};
 vector<int> major = {2, 2, 1, 2, 2, 2, 1};
 vector<string> scale;
 vector<string> wanted;
 string getSelectedNote(int charSize, vec2 mousepos);
 void updateNotes(RenderWindow& window);
-vector<pair<string, string>> findAllScales();
+void findAllScales();
 
 void start()
 {
     window.setFramerateLimit(10);
     font.loadFromFile("res/font.otf");
+    outTxt.setFont(font);
+    outTxt.setFillColor(Color::White);
+    outTxt.setCharacterSize(20);
+    outTxt.setPosition(0, 300 + 2 * outTxt.getCharacterSize());
     ui.font = font;
     ui.addDropDown(vec2(0, 280), vec2(100, 50), notes, 3, "key");
     ui.addDropDown(vec2(100, 280), vec2(100, 50), {"minor", "major"}, 2, "key");
@@ -84,6 +89,7 @@ int main()
         }
         window.clear(Color::Black);
         updateNotes(window);
+        window.draw(outTxt);
         ui.displayElements(window);
         window.display();
     }
@@ -117,7 +123,7 @@ void updateNotes(RenderWindow& window)
     }
 }
 
-vector<pair<string, string>> findAllScales()
+void findAllScales()
 {
     vector<pair<string, string>> scales;
     vector<string> currentScale;
@@ -128,22 +134,24 @@ vector<pair<string, string>> findAllScales()
             int currentOffset = 0;
             for(int i = 0; i < 7; i++)
             {
-                currentScale.push_back(notes[(n + currentOffset) % notes.size()]);
+                string currentNote = notes[(n + currentOffset) % notes.size()];
+                if(count(wanted.begin(), wanted.end(), currentNote) == 1 &&
+                   count(currentScale.begin(), currentScale.end(), currentNote) == 0)
+                    currentScale.push_back(currentNote);
                 currentOffset += t == 0 ? minor[i] : major[i];
             }
             sort(wanted.begin(), wanted.end());
             sort(currentScale.begin(), currentScale.end());
-            for(auto & c : wanted)
-                cout << c;
-            cout << endl;
-            for(auto& c : currentScale)
-                cout << c;
-            cout << endl;
             string type = t == 0 ? "minor" : "major";
             if(wanted == currentScale)
+            {
                 cout << "found one at " << notes[n] << " " << type << endl;
+                scales.push_back(make_pair(notes[n], type));
+            }
         }
-    return scales;
+    outTxt.setString("");
+    for(auto& p : scales)
+        outTxt.setString(outTxt.getString() + p.first + " " + p.second + "\n");
 }
 
 string getSelectedNote(int charSize, vec2 mousepos)
